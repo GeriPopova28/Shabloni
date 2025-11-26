@@ -1,55 +1,56 @@
 package com.parking;
 
-import com.parking.model.Car;
-import com.parking.model.Motocycle;
-import com.parking.model.Truck;
-import com.parking.model.Vechicle;
+import com.parking.model.Vehicle;
+import com.parking.factory.VehicleFactory;
 import com.parking.singleton.ParkingLot;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/parking")
-
+@Controller
 public class ParkingController {
-    private final ParkingLot parkingLot = ParkingLot.getInstance(10); // 10 места
 
-    @GetMapping("/status")
-    public String getStatus() {
-        return "Free slots: " + parkingLot.getFreeSlots() + "/" + parkingLot.getTotalSlots();
+    private final ParkingLot parkingLot;
+
+    public ParkingController(ParkingLot parkingLot) {
+        this.parkingLot = parkingLot;
+    }
+
+    @GetMapping("/")
+    public String home(Model model) {
+        model.addAttribute("free", parkingLot.getFreeSpace());
+        model.addAttribute("total", parkingLot.getCapacity());
+        model.addAttribute("vehicles", parkingLot.getParkedVehicles());
+        return "index";
     }
 
     @PostMapping("/park")
-    public String park(@RequestParam String type) {
-        Vechicle vehicle;
-
-        switch (type.toLowerCase()) {
-            case "car":
-                vehicle = new Car();
-                break;
-            case "motorcycle":
-                vehicle = new Motocycle();
-                break;
-            case "truck":
-                vehicle = new Truck();
-                break;
-            default:
-                return "Unknown vehicle type";
+    public String park(@RequestParam String type, @RequestParam String licensePlate, Model model) {
+        if (!isValidLicensePlate(licensePlate)) {
+            model.addAttribute("message", "Invalid license plate format!");
+        } else {
+            Vehicle vehicle = VehicleFactory.createVehicle(type, licensePlate);
+            boolean success = parkingLot.parkVehicle(vehicle);
+            model.addAttribute("message", success ? "Vehicle parked successfully!" : "Not enough space!");
         }
-        boolean success = parkingLot.parkVehicle(vehicle);
-        return success ? type + " parked!" : "Not enough space for " + type;
+        model.addAttribute("vehicles", parkingLot.getParkedVehicles());
+        model.addAttribute("free", parkingLot.getFreeSpace());
+        model.addAttribute("total", parkingLot.getCapacity());
+        return "index";
     }
 
     @PostMapping("/remove")
-    public String remove(@RequestParam String type) {
-        Vechicle vehicle;
-        switch (type.toLowerCase()) {
-            case "car": vehicle = new Car(); break;
-            case "motorcycle": vehicle = new Motocycle(); break;
-            case "truck": vehicle = new Truck(); break;
-            default: return "Unknown vehicle type";
-        }
+    public String remove(@RequestParam String licensePlate, Model model) {
+        double fee = parkingLot.removeVehicleByPlate(licensePlate);
+        model.addAttribute("message", fee > 0 ? "Vehicle removed. Fee: $" + fee : "Vehicle not found!");
+        model.addAttribute("vehicles", parkingLot.getParkedVehicles());
+        model.addAttribute("free", parkingLot.getFreeSpace());
+        model.addAttribute("total", parkingLot.getCapacity());
+        return "index";
+    }
 
-        parkingLot.removeVehicle(vehicle);
-        return type + " removed!";
+    private boolean isValidLicensePlate(String licensePlate) {
+        if (licensePlate == null || licensePlate.isEmpty()) return false;
+        return licensePlate.toUpperCase().matches("^[A-Z]{1,2}\\d{4}[A-Z]{2}$");
     }
 }

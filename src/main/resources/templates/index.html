@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parking System</title>
+    <style>
+        body { background: linear-gradient(to right, #2193b0, #6dd5ed); font-family: Arial, sans-serif; padding: 30px; color: #fff; }
+        h1, h2 { text-align: center; }
+        form { text-align: center; margin-bottom: 20px; }
+        input, select, button { padding: 10px 20px; margin: 5px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; }
+        button { background-color: #B0E0E6; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background-color: rgba(255,255,255,0.9); color: #333; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: center; }
+        th { background-color: #2193b0; color: white; }
+        tr:nth-child(even) { background-color: rgba(0,0,0,0.05); }
+        tr:hover { background-color: rgba(33,147,176,0.2); }
+    </style>
+</head>
+<body>
+
+<h1>Parking System</h1>
+
+<h2>Park a Vehicle</h2>
+<form th:action="@{/park}" method="post">
+    <input type="text" name="licensePlate" placeholder="Enter license plate" required>
+    <select name="type">
+        <option value="car">Car</option>
+        <option value="motorcycle">Motorcycle</option>
+        <option value="truck">Truck</option>
+    </select>
+    <button type="submit">Park Vehicle</button>
+</form>
+
+<h2>Remove a Vehicle</h2>
+<form th:action="@{/remove}" method="post">
+    <input type="text" name="licensePlate" placeholder="Enter license plate" required>
+    <button type="submit">Remove Vehicle</button>
+</form>
+
+<h2>Parking Status</h2>
+<table>
+    <thead>
+    <tr>
+        <th>License Plate</th>
+        <th>Type</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="vehicle : ${vehicles}">
+        <td th:text="${vehicle.licensePlate}"></td>
+        <td th:text="${vehicle.type}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<p>Free spaces: <span th:text="${free}"></span></p>
+<p>Total capacity: <span th:text="${total}"></span></p>
+
+<p th:if="${message}" style="color: yellow; font-weight: bold;">[[${message}]]</p>
+
+</body>
+</html>

@@ -1,71 +1,45 @@
 package com.parking.singleton;
 
-
-import com.parking.model.ParkingSlot;
-import com.parking.model.Vechicle;
-
+import com.parking.model.Vehicle;
+import com.parking.observer.Observer;
+import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class ParkingLot {
-    private static ParkingLot instance;
 
-    private List<ParkingSlot> slots;
+    private final int capacity = 10;
+    private final List<Vehicle> parkedVehicles = new ArrayList<>();
+    private final List<Observer> observers = new ArrayList<>();
 
-    private ParkingLot(int capacity) {
-        slots = new ArrayList<>();
-        for (int i = 0; i < capacity; i++) {
-            slots.add(new ParkingSlot());
-        }
+    // Observer методи
+    public void addObserver(Observer o) { observers.add(o); }
+    public void removeObserver(Observer o) { observers.remove(o); }
+
+    private void notifyObservers() {
+        for (Observer o : observers) o.update(parkedVehicles);
     }
 
-    public static synchronized ParkingLot getInstance(int capacity) {
-        if (instance == null) {
-            instance = new ParkingLot(capacity);
-        }
-        return instance;
-    }
-
-    public synchronized boolean parkVehicle(Vechicle vehicle) {
-        int needed = vehicle.getSize();
-        int freeCount = (int) slots.stream().filter(s -> !s.isOccupied()).count();
-
-        if (freeCount < needed) return false;
-
-        int parked = 0;
-        for (ParkingSlot slot : slots) {
-            if (!slot.isOccupied() && parked < needed) {
-                slot.occupy();
-                parked++;
-            }
-        }
+    public boolean parkVehicle(Vehicle vehicle) {
+        if (parkedVehicles.size() >= capacity) return false;
+        parkedVehicles.add(vehicle);
+        notifyObservers();
         return true;
     }
 
-    public synchronized void removeVehicle(Vechicle vehicle) {
-        int needed = vehicle.getSize();
-        int freed = 0;
-        for (ParkingSlot slot : slots) {
-            if (slot.isOccupied() && freed < needed) {
-                slot.free();
-                freed++;
+    public double removeVehicleByPlate(String licensePlate) {
+        for (Vehicle v : parkedVehicles) {
+            if (v.getLicensePlate().equals(licensePlate)) {
+                parkedVehicles.remove(v);
+                notifyObservers();
+                return 5.0;
             }
         }
+        return 0;
     }
 
-    public void start() {
-        System.out.println("ParkingLot стартира!");
-        System.out.println("Общо слотове: " + getTotalSlots());
-        System.out.println("Свободни слотове: " + getFreeSlots());
-    }
-
-
-    public int getFreeSlots() {
-        return (int) slots.stream().filter(s -> !s.isOccupied()).count();
-    }
-
-    public int getTotalSlots() {
-        return slots.size();
-    }
-
+    public int getCapacity() { return capacity; }
+    public int getFreeSpace() { return capacity - parkedVehicles.size(); }
+    public List<Vehicle> getParkedVehicles() { return parkedVehicles; }
 }
